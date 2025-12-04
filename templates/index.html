@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузчик изображений</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --border-color: #334155;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            background-color: var(--card-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 4rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent-color);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            transition: color 0.3s;
+        }
+
+        .upload-zone:hover .upload-icon {
+            color: var(--accent-color);
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Progress Section */
+        #progress-section {
+            margin-top: 2rem;
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: none;
+            animation: slideDown 0.4s ease;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .file-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .status-pending {
+            color: var(--text-secondary);
+        }
+
+        .status-processing {
+            color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+
+        .status-done {
+            color: var(--success-color);
+        }
+
+        .status-error {
+            color: #ef4444;
+        }
+
+        /* Gallery */
+        .gallery-section {
+            margin-top: 3rem;
+        }
+
+        .gallery-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .gallery-title-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .gallery-count {
+            background-color: var(--card-bg);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .thumbnail-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            aspect-ratio: 1;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .thumbnail-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        .thumbnail-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .thumbnail-card:hover .thumbnail-overlay {
+            opacity: 1;
+        }
+
+        .file-info {
+            color: white;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Загрузчик изображений</h1>
+            </div>
+        </header>
+
+        <!-- Dashboard -->
+        <div class="dashboard-grid" id="stats-dashboard" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-label">Пользователей</div>
+                <div class="stat-value" id="stat-users">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Активные загрузки</div>
+                <div class="stat-value" id="stat-active">-</div>
+                <div class="stat-sub">Очередь: <span id="stat-queue">-</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Всего изображений</div>
+                <div class="stat-value" id="stat-images">-</div>
+                <div class="stat-sub" id="stat-size">- GB</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Нагрузка CPU</div>
+                <div class="stat-value" id="stat-cpu">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">RAM (Used / Total)</div>
+                <div class="stat-value" id="stat-ram">-</div>
+                <div class="stat-sub" id="stat-mem-limit">Limit: -</div>
+            </div>
+        </div>
+
+        <form id="upload-form">
+            <div class="upload-zone" id="drop-zone">
+                <input type="file" id="file-input" name="images" multiple accept="image/*, .psd, .tiff, .tif, .dng">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                    </path>
+                </svg>
+                <div class="upload-text">Перетащите файлы сюда</div>
+                <div class="upload-subtext">или нажмите для выбора</div>
+            </div>
+        </form>
+
+        <div id="progress-section">
+            <div class="progress-header">
+                <h3>Обработка файлов</h3>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="overall-bar"></div>
+            </div>
+            <div class="file-list" id="file-list">
+                <!-- File items will be injected here -->
+            </div>
+        </div>
+
+        <div class="gallery-section">
+            <div class="gallery-header">
+                <div class="gallery-title-group">
+                    <h2>Галерея</h2>
+                    <span class="gallery-count" id="gallery-count">0 файлов</span>
+                </div>
+                <button id="delete-all-btn" class="btn-danger">Удалить все</button>
+            </div>
+            <div class="thumbnails" id="thumbnails">
+
+                <script>
+                    // User ID Management
+                    function getUserID() {
+                        let id = localStorage.getItem('ipp_user_id');
+                        if (!id) {
+                            id = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                            localStorage.setItem('ipp_user_id', id);
+                        }
+                        return id;
+                    }
+                    const userID = getUserID();
+
+                    // Icons
+                    const ICONS = {
+                        pending: '<svg class="status-icon status-pending" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                        processing: '<svg class="status-icon status-processing" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>',
+                        done: '<svg class="status-icon status-done" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+                        error: '<svg class="status-icon status-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+                    };
+
+                    const state = {
+                        files: new Map(), // filename -> { status, element }
+                        displayedImages: new Set(),
+                        previousProgress: { total: 0, completed: 0 },
+                        hiddenFiles: new Set()
+                    };
+
+                    // DOM Elements
+                    const dropZone = document.getElementById('drop-zone');
+                    const fileInput = document.getElementById('file-input');
+                    const progressSection = document.getElementById('progress-section');
+                    const fileList = document.getElementById('file-list');
+                    const thumbnailsContainer = document.getElementById('thumbnails');
+                    const overallBar = document.getElementById('overall-bar');
+                    const progressPercent = document.getElementById('progress-percent');
+                    const galleryCount = document.getElementById('gallery-count');
+                    const deleteAllBtn = document.getElementById('delete-all-btn');
+
+                    // Drag & Drop
+                    dropZone.addEventListener('click', () => fileInput.click());
+                    dropZone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        dropZone.classList.add('dragover');
+                    });
+                    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+                    dropZone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        dropZone.classList.remove('dragover');
+                        if (e.dataTransfer.files.length) {
+                            handleFiles(e.dataTransfer.files);
+                        }
+                    });
+                    fileInput.addEventListener('change', () => {
+                        if (fileInput.files.length) {
+                            handleFiles(fileInput.files);
+                        }
+                    });
+
+                    // Delete All
+                    deleteAllBtn.addEventListener('click', async () => {
+                        if (!confirm('Вы уверены, что хотите удалить все изображения?')) return;
+
+                        try {
+                            const res = await fetch(`/delete-all?userID=${userID}`, { method: 'POST' });
+                            if (res.ok) {
+                                state.files.clear();
+                                state.displayedImages.clear();
+                                state.previousProgress = { total: 0, completed: 0 };
+                                state.hiddenFiles.clear();
+                                fileList.innerHTML = '';
+                                thumbnailsContainer.innerHTML = '';
+                                updateGalleryCount();
+                                progressSection.style.display = 'none';
+                            } else {
+                                alert('Ошибка при удалении');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert('Ошибка сети');
+                        }
+                    });
+
+                    // --- Concurrent Upload Logic ---
+                    const MAX_CONCURRENT_UPLOADS = 5;
+                    let uploadQueue = [];
+                    let activeUploads = 0;
+
+                    async function handleFiles(files) {
+                        // 1. Send total count first to initialize progress bar
+                        const countFormData = new FormData();
+                        countFormData.append('count', files.length);
+
+                        try {
+                            await fetch('/upload', {
+                                method: 'POST',
+                                body: countFormData,
+                                headers: { 'X-User-ID': userID }
+                            });
+                        } catch (e) {
+                            console.error("Failed to send count", e);
+                        }
+
+                        // 2. Queue files
+                        for (let i = 0; i < files.length; i++) {
+                            uploadQueue.push(files[i]);
+                        }
+
+                        processQueue();
+                    }
+
+                    async function processQueue() {
+                        if (uploadQueue.length === 0 && activeUploads === 0) {
+                            return;
+                        }
+
+                        while (activeUploads < MAX_CONCURRENT_UPLOADS && uploadQueue.length > 0) {
+                            const file = uploadQueue.shift();
+                            activeUploads++;
+                            uploadFile(file).finally(() => {
+                                activeUploads--;
+                                processQueue();
+                            });
+                        }
+                    }
+
+                    async function uploadFile(file) {
+                        if (!ws) connectWS();
+                        progressSection.style.display = 'block';
+
+                        const formData = new FormData();
+                        // Don't send count here, we sent it upfront
+                        formData.append('images', file);
+
+                        try {
+                            const res = await fetch('/upload', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-User-ID': userID
+                                }
+                            });
+                            if (!res.ok) throw new Error(await res.text());
+                        } catch (err) {
+                            console.error('Upload error for ' + file.name, err);
+                        }
+                    }
+
+                    let ws = null;
+
+                    function connectWS() {
+                        if (ws) return;
+
+                        ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?userID=' + userID);
+
+                        ws.onopen = () => {
+                            console.log('WS Connected');
+                        };
+
+                        ws.onmessage = (event) => {
+                            const data = JSON.parse(event.data);
+                            if (data.type === 'stats') {
+                                updateDashboard(data.stats);
+                            } else {
+                                updateProgress(data);
+                            }
+                        };
+
+                        ws.onclose = () => {
+                            ws = null;
+                            setTimeout(connectWS, 3000);
+                        };
+
+                        ws.onerror = (e) => console.error('WS Error', e);
+                    }
+
+                    function updateProgress(data) {
+                        // Calculate Relative Progress
+                        const currentTotal = data.total - state.previousProgress.total;
+                        const currentCompleted = data.completed - state.previousProgress.completed;
+
+                        // Safety check for negative values (shouldn't happen if logic is correct)
+                        const displayTotal = Math.max(0, currentTotal);
+                        const displayCompleted = Math.max(0, currentCompleted);
+
+                        const percent = displayTotal > 0 ? Math.round((displayCompleted / displayTotal) * 100) : 0;
+                        overallBar.style.width = percent + '%';
+                        progressPercent.textContent = percent + '%';
+
+                        // If total is 0 (e.g. after delete), hide progress
+                        if (data.total === 0) {
+                            progressSection.style.display = 'none';
+                            fileList.innerHTML = '';
+                            state.files.clear();
+                            state.previousProgress = { total: 0, completed: 0 };
+                            state.hiddenFiles.clear();
+                            return;
+                        } else {
+                            // Only show if we have active files not hidden
+                            if (currentTotal > 0) {
+                                progressSection.style.display = 'block';
+                            }
+                        }
+
+                        // Check for completion of current batch
+                        if (displayTotal > 0 && displayCompleted >= displayTotal) {
+                            setTimeout(() => {
+                                // Double check we are still at 100% before hiding
+                                const freshTotal = data.total - state.previousProgress.total;
+                                const freshCompleted = data.completed - state.previousProgress.completed;
+                                if (freshTotal > 0 && freshCompleted >= freshTotal) {
+                                    progressSection.style.display = 'none';
+
+                                    // Update offsets for next batch
+                                    state.previousProgress.total = data.total;
+                                    state.previousProgress.completed = data.completed;
+
+                                    // Mark current files as hidden so they don't reappear
+                                    for (const filename of state.files.keys()) {
+                                        state.hiddenFiles.add(filename);
+                                    }
+
+                                    // Clear the list for next time
+                                    fileList.innerHTML = '';
+                                    state.files.clear();
+                                }
+                            }, 3000); // Hide after 3 seconds
+                        }
+
+                        // Update Individual Files
+                        for (const [filename, info] of Object.entries(data.files)) {
+                            // Skip files that belong to previous batches
+                            if (state.hiddenFiles.has(filename)) continue;
+
+                            let fileState = state.files.get(filename);
+
+                            if (!fileState) {
+                                // Create new list item
+                                const el = document.createElement('div');
+                                el.className = 'file-item';
+                                el.innerHTML = `
+                        <div class="file-name">
+                            <span class="status-container">${ICONS.pending}</span>
+                            ${filename}
+                        </div>
+                        <span class="status-text">Ожидание...</span>
+                    `;
+                                // Prepend to show newest first
+                                fileList.insertBefore(el, fileList.firstChild);
+                                fileState = { element: el, status: 'pending' };
+                                state.files.set(filename, fileState);
+                            }
+
+                            // Update status if changed
+                            if (fileState.status !== info.status) {
+                                fileState.status = info.status;
+                                const iconContainer = fileState.element.querySelector('.status-container');
+                                const textContainer = fileState.element.querySelector('.status-text');
+
+                                if (info.status === 'processing') {
+                                    iconContainer.innerHTML = ICONS.processing;
+                                    textContainer.textContent = 'Обработка...';
+                                    textContainer.style.color = 'var(--accent-color)';
+                                } else if (info.status === 'done') {
+                                    iconContainer.innerHTML = ICONS.done;
+                                    textContainer.textContent = 'Готово';
+                                    textContainer.style.color = 'var(--success-color)';
+                                    const displayName = info.original_name || filename;
+                                    addThumbnail(info.url, displayName);
+                                } else if (info.status === 'error') {
+                                    iconContainer.innerHTML = ICONS.error;
+                                    textContainer.textContent = 'Ошибка';
+                                    textContainer.style.color = '#ef4444';
+                                }
+                            }
+                        }
+                    }
+
+                    function addThumbnail(url, filename) {
+                        if (!url || state.displayedImages.has(url)) return;
+
+                        const div = document.createElement('div');
+                        div.className = 'thumbnail-card';
+                        div.innerHTML = `
+                <img src="${url}" class="thumbnail-img" loading="lazy" alt="${filename}">
+                <div class="thumbnail-overlay">
+                    <div class="file-info">${filename}</div>
+                </div>
+            `;
+                        // Prepend to show newest first (visual only, list is already sorted from backend)
+                        thumbnailsContainer.insertBefore(div, thumbnailsContainer.firstChild);
+                        state.displayedImages.add(url);
+                        updateGalleryCount();
+                    }
+
+                    function updateGalleryCount() {
+                        galleryCount.textContent = `${state.displayedImages.size} файлов`;
+                    }
+
+                    async function loadExistingThumbnails() {
+                        try {
+                            const res = await fetch(`/list?userID=${userID}`);
+                            if (!res.ok) return;
+                            const files = await res.json();
+                            if (files && Array.isArray(files)) {
+                                // Backend returns sorted by Newest First
+                                // Use appendChild to maintain that order for initial load
+                                files.forEach(file => {
+                                    const name = file.original_name || file.url.split('/').pop();
+                                    addThumbnailToBottom(file.url, name);
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Failed to load thumbnails', e);
+                        }
+                    }
+
+                    function addThumbnailToBottom(url, filename) {
+                        if (!url || state.displayedImages.has(url)) return;
+
+                        const div = document.createElement('div');
+                        div.className = 'thumbnail-card';
+                        div.innerHTML = `
+                <img src="${url}" class="thumbnail-img" loading="lazy" alt="${filename}">
+                <div class="thumbnail-overlay">
+                    <div class="file-info">${filename}</div>
+                </div>
+            `;
+                        thumbnailsContainer.appendChild(div);
+                        state.displayedImages.add(url);
+                        updateGalleryCount();
+                    }
+
+                    function updateDashboard(stats) {
+                        document.getElementById('stats-dashboard').style.display = 'grid';
+                        document.getElementById('stat-users').textContent = stats.total_users;
+                        document.getElementById('stat-active').textContent = stats.active_uploads;
+                        document.getElementById('stat-queue').textContent = stats.queue_length;
+                        document.getElementById('stat-images').textContent = stats.total_images;
+                        document.getElementById('stat-size').textContent = stats.total_size_gb.toFixed(2) + ' GB';
+                        document.getElementById('stat-cpu').textContent = stats.cpu_usage.toFixed(1) + '%';
+
+                        const usedGB = (stats.ram_used / 1024 / 1024 / 1024).toFixed(2);
+                        const totalGB = (stats.ram_total / 1024 / 1024 / 1024).toFixed(2);
+                        document.getElementById('stat-ram').textContent = `${usedGB} / ${totalGB} GB`;
+
+                        const limitGB = (stats.memory_limit / 1024 / 1024 / 1024).toFixed(2);
+                        document.getElementById('stat-mem-limit').textContent = `Limit: ${limitGB} GB`;
+                    }
+
+                    // Initial load
+                    connectWS();
+                    loadExistingThumbnails();
+
+                </script>
+</body>
+
+</html>

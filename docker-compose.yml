@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: app
+    
+    # ⚠️ Удаляем 'ports'. Используем 'expose' для внутренней сети.
+    # Timeweb сам настроит проксирование с 80/443 на этот порт.
+    expose:
+      - "8080"
+    
+    # ⚠️ УДАЛЯЕМ ЛОКАЛЬНЫЕ VOLUMES! Настройте персистентное хранилище
+    # (Managed Disk) через интерфейс Timeweb на путь /app/uploads
+    # (и, возможно, /app/thumbnails).
+    
+    environment:
+      - REDIS_ADDR=redis:6379
+      # Оптимизация для HDD (4 ядра, 1 оставляем свободным)
+      - WORKER_COUNT=3 
+      # Оптимизация для HDD (уменьшаем параллелизм загрузки)
+      - MAX_CONCURRENT_PER_USER=2 
+      - MAX_UPLOAD_MB=300
+      - MAX_PIXELS=65000
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:alpine
+    volumes:
+      # Оставляем, так как это данные Redis, которые должны сохраняться
+      - redis_data:/data 
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+# ⚠️ Удаляем redisinsight для упрощения деплоя
+volumes:
+  redis_data:
